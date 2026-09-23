@@ -81,6 +81,10 @@ const PLANOS = ['full', 'anual', 'mensal'];
 
 const PLANO_LABEL = { full: 'Full (perpétua)', anual: 'Anual', mensal: 'Mensal' };
 
+const PRODUTOS = ['gassflow_bpm', 'bpo_fopag'];
+
+const PRODUTO_LABEL = { gassflow_bpm: 'GassFlow! BPM', bpo_fopag: 'BPO FOPAG GASS' };
+
 /**
  * Data de fim sugerida a partir do início e do plano.
  * anual: +1 ano | mensal: +1 mês | full: null (perpétua, sem fim)
@@ -121,6 +125,7 @@ function avaliarLicenca(lic, opts = {}) {
 
   const base = {
     cliente: lic.cliente_nome ?? null,
+    produto: lic.produto ?? 'gassflow_bpm',
     plano,
     expira_em: lic.fim ? dia(lic.fim).toISOString().slice(0, 10) : null
   };
@@ -182,6 +187,8 @@ module.exports = {
   cnpjValido,
   PLANOS,
   PLANO_LABEL,
+  PRODUTOS,
+  PRODUTO_LABEL,
   calcularFim,
   renovarFim,
   avaliarLicenca

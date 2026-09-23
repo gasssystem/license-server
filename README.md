@@ -15,6 +15,7 @@ Uma **licença** = validade + status + cliente:
 |---|---|
 | `chave` | `DCF-XXXXX-XXXXX-XXXXX-XXXXX` (gerada automaticamente) |
 | `cliente_nome` / `cliente_cnpj` | razão social e CNPJ do **contratante** |
+| `produto` | `gassflow_bpm` (GassFlow! BPM) · `bpo_fopag` (BPO FOPAG GASS) |
 | `plano` | `full` (perpétua) · `anual` · `mensal` |
 | `status` | `ativa` · `suspensa` · `cancelada` |
 | `inicio` / `fim` | vigência (datas); `fim` NULL = perpétua (plano full) |

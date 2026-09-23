@@ -89,7 +89,7 @@ validarRouter.post('/validar', async (req, res, next) => {
     }
 
     const [lic] = await q(
-      `SELECT id, cliente_nome, cliente_cnpj, plano, status, inicio, fim, tolerancia_dias FROM licencas WHERE chave = :chave`,
+      `SELECT id, cliente_nome, cliente_cnpj, produto, plano, status, inicio, fim, tolerancia_dias FROM licencas WHERE chave = :chave`,
       { chave }
     );
 

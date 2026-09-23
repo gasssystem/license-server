@@ -169,6 +169,12 @@
       <h3 id="dlg-lic-titulo">Nova licença</h3>
       <label>Cliente (razão social) <input name="cliente_nome" required maxlength="180" /></label>
       <label>CNPJ <input name="cliente_cnpj" required placeholder="00.000.000/0000-00" /></label>
+      <label>Produto da licença
+        <select name="produto">
+          <option value="gassflow_bpm">GassFlow! BPM</option>
+          <option value="bpo_fopag">BPO FOPAG GASS</option>
+        </select>
+      </label>
       <label>Plano
         <select name="plano">
           <option value="anual">Anual</option>
@@ -371,7 +377,7 @@
       const linhas = await res.json();
       if (!linhas.length) return ($('#lista-lic').innerHTML = '<div class="empty">Nenhuma licença.</div>');
       $('#lista-lic').innerHTML = `<table><thead><tr>
-          <th>Cliente</th><th>Plano</th><th>Chave</th><th>Vigência</th><th>Situação</th><th></th></tr></thead>
+          <th>Cliente</th><th>Produto</th><th>Plano</th><th>Chave</th><th>Vigência</th><th>Situação</th><th></th></tr></thead>
         <tbody>${linhas.map(linhaLic).join('')}</tbody></table>`;
       $$('[data-edit-lic]').forEach((b) => (b.onclick = () => abrirLic(JSON.parse(b.dataset.editLic))));
       $$('[data-toggle-lic]').forEach((b) => (b.onclick = () => toggleLic(JSON.parse(b.dataset.toggleLic))));
@@ -380,6 +386,7 @@
       $$('[data-grupo-lic]').forEach((b) => (b.onclick = () => abrirGrupo(JSON.parse(b.dataset.grupoLic))));
       $$('[data-del-lic]').forEach((b) => (b.onclick = () => removerLic(b.dataset.delLic)));
     }
+    const PRODUTO_LABEL = { gassflow_bpm: 'GassFlow! BPM', bpo_fopag: 'BPO FOPAG GASS' };
     const PLANO_LABEL = { full: 'Full', anual: 'Anual', mensal: 'Mensal' };
     function linhaLic(l) {
       const j = JSON.stringify(l).replace(/"/g, '&quot;');
@@ -389,6 +396,7 @@
         <td><b>${l.cliente_nome}</b><br><span class="muted">${l.cliente_cnpj}</span>${
           l.grupo_total > 0 ? `<br><span class="muted">+ ${l.grupo_total} no grupo</span>` : ''
         }</td>
+        <td>${PRODUTO_LABEL[l.produto] || l.produto}</td>
         <td>${PLANO_LABEL[l.plano] || l.plano}</td>
         <td><code>${l.chave}</code></td>
         <td>${vig}<br><span class="muted">${l.fim ? 'tol. ' + l.tolerancia_dias + 'd' : ''}</span></td>
@@ -427,7 +435,7 @@
       $('#dlg-lic-erro').textContent = '';
       const f = formLic;
       f.reset();
-      if (l) for (const k of ['cliente_nome', 'cliente_cnpj', 'plano', 'inicio', 'fim', 'tolerancia_dias', 'status', 'observacao'])
+      if (l) for (const k of ['cliente_nome', 'cliente_cnpj', 'produto', 'plano', 'inicio', 'fim', 'tolerancia_dias', 'status', 'observacao'])
         if (f[k]) f[k].value = l[k] ?? '';
       ajustarFimPorPlano();
       $('#dlg-lic').showModal();
@@ -438,6 +446,7 @@
       const f = e.target;
       const body = {
         cliente_nome: f.cliente_nome.value, cliente_cnpj: f.cliente_cnpj.value,
+        produto: f.produto.value,
         plano: f.plano.value,
         inicio: f.inicio.value,
         fim: f.plano.value === 'full' ? null : f.fim.value,

@@ -11,6 +11,7 @@ const {
   gerarChave,
   normalizarChave,
   PLANOS,
+  PRODUTOS,
   renovarFim,
   soDigitos
 } = require('../lib/licenca.js');
@@ -38,6 +39,10 @@ function validarPayload(body, { parcial = false } = {}) {
   if (exige('plano')) {
     if (!PLANOS.includes(body.plano)) erros.push(`plano deve ser ${PLANOS.join(' / ')}`);
     else out.plano = body.plano;
+  }
+  if (exige('produto')) {
+    if (!PRODUTOS.includes(body.produto)) erros.push(`produto deve ser ${PRODUTOS.join(' / ')}`);
+    else out.produto = body.produto;
   }
   if (exige('inicio')) {
     if (!DATA_RE.test(String(body.inicio))) erros.push('inicio deve ser YYYY-MM-DD');
@@ -179,6 +184,7 @@ adminRouter.post('/licencas', async (req, res, next) => {
 
     const dados = {
       chave,
+      produto: out.produto ?? 'gassflow_bpm',
       plano: out.plano ?? 'anual',
       status: out.status ?? 'ativa',
       tolerancia_dias: out.tolerancia_dias ?? 7,
