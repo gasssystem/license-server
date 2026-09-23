@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Licenças — GassFlow! BPM</title>
+  <style>
+    :root {
+      --brand: #3f2bc7; --brand-dark: #2f1fa0; --ink: #14142b; --mute: #5f6b7a;
+      --line: #e7e6ef; --bg: #f6f6fb; --ok: #0a7d3f; --warn: #a8620a; --bad: #b3261e;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--bg); }
+    header { background: var(--brand); color: #fff; padding: 12px 22px; display: flex; align-items: center; gap: 16px; }
+    header b { font-size: 16px; letter-spacing: .3px; }
+    header .sp { flex: 1; }
+    header .quem { font-size: 13px; opacity: .9; }
+    header button.link { background: none; border: 0; color: #fff; text-decoration: underline; cursor: pointer; font: inherit; padding: 0; }
+    nav { display: flex; gap: 4px; background: #fff; border-bottom: 1px solid var(--line); padding: 0 20px; }
+    nav button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 12px 14px; cursor: pointer; font: inherit; color: var(--mute); }
+    nav button.on { color: var(--brand-dark); border-bottom-color: var(--brand); font-weight: 600; }
+    main { max-width: 1120px; margin: 22px auto; padding: 0 20px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+    button, .btn { font: inherit; border: 1px solid var(--brand); background: var(--brand); color: #fff; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
+    button.ghost { background: #fff; color: var(--brand-dark); }
+    button.sm { padding: 4px 9px; font-size: 12px; }
+    button.danger { border-color: var(--bad); background: #fff; color: var(--bad); }
+    input, select { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: 13.5px; vertical-align: top; }
+    th { background: #faf9fe; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--mute); }
+    tr:last-child td { border-bottom: 0; }
+    code { background: #f2effc; padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
+    .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .pill.ativa, .pill.on { background: #e3f7ec; color: var(--ok); }
+    .pill.tolerancia, .pill.cnpj_em_avaliacao { background: #fff1e0; color: var(--warn); }
+    .pill.expirada, .pill.suspensa, .pill.cancelada, .pill.nao_encontrada, .pill.nao_iniciada, .pill.cnpj_nao_coberto, .pill.off, .pill.descartado { background: #fbe9e7; color: var(--bad); }
+    .pill.novo { background: #e8ecfb; color: var(--brand-dark); }
+    .pill.em_contato { background: #fff1e0; color: var(--warn); }
+    .pill.cliente { background: #e3f7ec; color: var(--ok); }
+    /* painel de monitoramento (leads) */
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 14px; }
+    .kpi { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 13px 15px; }
+    .kpi .v { font-size: 23px; font-weight: 700; color: var(--brand-dark); line-height: 1.1; }
+    .kpi .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--mute); margin-top: 4px; }
+    .paineis { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+    .painel { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+    .painel h4 { margin: 0 0 12px; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--mute); }
+    .bars { display: grid; gap: 8px; }
+    .bar-row { display: grid; grid-template-columns: 110px 1fr 34px; align-items: center; gap: 8px; font-size: 12.5px; }
+    .bar-row .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bar-row .num { text-align: right; color: var(--mute); }
+    .bar-track { background: #f2effc; border-radius: 5px; height: 13px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 5px; min-width: 2px; background: var(--brand); transition: width .3s; }
+    .spark { display: flex; align-items: flex-end; gap: 2px; height: 78px; padding-top: 6px; }
+    .spark div { flex: 1; background: var(--brand); border-radius: 2px 2px 0 0; min-height: 2px; }
+    .spark-eixo { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--mute); margin-top: 5px; }
+    @media (max-width: 720px) { .paineis { grid-template-columns: 1fr; } }
+    .lista-grupo { display: grid; gap: 6px; margin: 2px 0 4px; }
+    .lista-grupo .item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; }
+    .lista-grupo .item .sp { flex: 1; }
+    .lista-grupo .item.contratante { background: #faf9fe; }
+    dialog { border: 0; border-radius: 12px; padding: 0; max-width: 460px; width: 92vw; }
+    dialog form { padding: 22px; display: grid; gap: 12px; }
+    dialog h3 { margin: 0 0 4px; }
+    dialog label { display: grid; gap: 4px; font-size: 12.5px; color: var(--mute); }
+    dialog .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; }
+    .muted { color: var(--mute); font-size: 12px; }
+    .erro { color: var(--bad); font-size: 13px; }
+    .empty { text-align: center; color: var(--mute); padding: 40px; }
+    /* login */
+    #login { display: grid; place-items: center; min-height: 100vh; padding: 20px; }
+    #login form { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 30px; width: 360px; max-width: 100%; display: grid; gap: 14px; box-shadow: 0 24px 70px rgba(15,10,60,.14); }
+    #login h1 { margin: 0; font-size: 18px; }
+    #login h1 span { color: var(--brand-dark); }
+    #login label { display: grid; gap: 5px; font-size: 12.5px; color: var(--mute); }
+    #login button { padding: 11px; }
+    .hide { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- ===================== LOGIN ===================== -->
+  <div id="login">
+    <form id="form-login">
+      <h1>Licenças · GassFlow! <span>BPM</span></h1>
+      <label>E-mail <input name="email" type="email" required autocomplete="username" /></label>
+      <label>Senha <input name="senha" type="password" required autocomplete="current-password" /></label>
+      <div class="erro" id="login-erro"></div>
+      <button type="submit">Entrar</button>
+    </form>
+  </div>
+
+  <!-- ===================== APP ===================== -->
+  <div id="app" class="hide">
+    <header>
+      <b>Licenças · GassFlow! BPM</b>
+      <span class="sp"></span>
+      <span class="quem" id="quem"></span>
+      <button class="link" id="btn-logout">Sair</button>
+    </header>
+    <nav>
+      <button data-tab="licencas" class="on">Licenças</button>
+      <button data-tab="leads">Possíveis clientes</button>
+      <button data-tab="usuarios">Usuários</button>
+    </nav>
+
+    <main>
+      <!-- LICENÇAS -->
+      <section id="tab-licencas">
+        <div class="row">
+          <input id="filtro-q" placeholder="Cliente ou chave" />
+          <select id="filtro-status">
+            <option value="">Todos os status</option>
+            <option value="ativa">Ativa</option>
+            <option value="suspensa">Suspensa</option>
+            <option value="cancelada">Cancelada</option>
+          </select>
+          <button class="ghost" id="btn-buscar">Buscar</button>
+          <span class="sp" style="flex:1"></span>
+          <button id="btn-nova-lic">+ Nova licença</button>
+        </div>
+        <div class="erro" id="msg-lic"></div>
+        <div id="lista-lic"></div>
+      </section>
+
+      <!-- POSSÍVEIS CLIENTES -->
+      <section id="tab-leads" class="hide">
+        <div class="row" style="margin-bottom:8px">
+          <b style="font-size:15px">Monitoramento de possíveis clientes</b>
+          <span class="sp" style="flex:1"></span>
+          <button class="ghost sm" id="lead-atualizar">Atualizar</button>
+        </div>
+        <div id="lead-painel"></div>
+        <h4 style="font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--mute); margin:18px 0 8px">Registros</h4>
+        <div class="row">
+          <input id="lead-q" placeholder="CNPJ, razão social ou chave" />
+          <select id="lead-situacao">
+            <option value="">Todas as situações</option>
+            <option value="novo">Novo</option>
+            <option value="em_contato">Em contato</option>
+            <option value="cliente">Cliente</option>
+            <option value="descartado">Descartado</option>
+          </select>
+          <button class="ghost" id="lead-buscar">Buscar</button>
+          <span class="sp" style="flex:1"></span>
+          <span class="muted">CNPJs que já rodam o GassFlow! BPM e chamaram a validação de licença.</span>
+        </div>
+        <div class="erro" id="msg-lead"></div>
+        <div id="lista-lead"></div>
+      </section>
+
+      <!-- USUÁRIOS -->
+      <section id="tab-usuarios" class="hide">
+        <div class="row">
+          <span class="muted">Usuários habilitados a acessar esta área.</span>
+          <span class="sp" style="flex:1"></span>
+          <button id="btn-novo-user">+ Novo usuário</button>
+        </div>
+        <div class="erro" id="msg-user"></div>
+        <div id="lista-user"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- dialog licença -->
+  <dialog id="dlg-lic">
+    <form id="form-lic">
+      <h3 id="dlg-lic-titulo">Nova licença</h3>
+      <label>Cliente (razão social) <input name="cliente_nome" required maxlength="180" /></label>
+      <label>CNPJ <input name="cliente_cnpj" required placeholder="00.000.000/0000-00" /></label>
+      <label>Plano
+        <select name="plano">
+          <option value="anual">Anual</option>
+          <option value="mensal">Mensal</option>
+          <option value="full">Full (perpétua)</option>
+        </select>
+      </label>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <label>Início <input name="inicio" type="date" required /></label>
+        <label id="lbl-fim">Expira em <input name="fim" type="date" /></label>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <label>Tolerância (dias) <input name="tolerancia_dias" type="number" min="0" max="365" value="7" /></label>
+        <label>Status
+          <select name="status">
+            <option value="ativa">Ativa</option><option value="suspensa">Suspensa</option><option value="cancelada">Cancelada</option>
+          </select>
+        </label>
+      </div>
+      <label>Observação <input name="observacao" maxlength="500" /></label>
+      <div class="erro" id="dlg-lic-erro"></div>
+      <div class="actions">
+        <button type="button" class="ghost" data-fechar>Cancelar</button>
+        <button type="submit">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- dialog renovação -->
+  <dialog id="dlg-renovar">
+    <form id="form-renovar">
+      <h3>Renovar licença</h3>
+      <p class="muted" id="renovar-cliente"></p>
+      <label>Renovar por
+        <select name="periodos" id="renovar-periodos">
+          <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+          <option value="4">4</option><option value="6">6</option><option value="12">12</option>
+        </select>
+        <span id="renovar-unidade"></span>
+      </label>
+      <p class="muted">Nova vigência até <b id="renovar-preview">—</b></p>
+      <div class="erro" id="dlg-renovar-erro"></div>
+      <div class="actions">
+        <button type="button" class="ghost" data-fechar>Cancelar</button>
+        <button type="submit">Renovar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- dialog grupo de CNPJs -->
+  <dialog id="dlg-grupo">
+    <form id="form-grupo" method="dialog">
+      <h3>Grupo de CNPJs</h3>
+      <p class="muted" id="grupo-cliente"></p>
+      <div class="lista-grupo" id="grupo-lista"></div>
+      <div class="erro" id="dlg-grupo-erro"></div>
+      <div style="border-top:1px solid var(--line); padding-top:10px; display:grid; gap:8px;">
+        <label>Adicionar empresa ao grupo
+          <input id="grupo-cnpj" placeholder="00.000.000/0000-00" />
+        </label>
+        <label>Razão social (opcional)
+          <input id="grupo-razao" maxlength="180" />
+        </label>
+        <button type="button" class="ghost" id="grupo-add">+ Adicionar CNPJ</button>
+      </div>
+      <div class="actions">
+        <button type="submit" class="ghost">Fechar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- dialog troca de plano -->
+  <dialog id="dlg-plano">
+    <form id="form-plano">
+      <h3>Trocar plano</h3>
+      <p class="muted" id="plano-cliente"></p>
+      <label>Novo plano
+        <select name="plano" id="plano-novo">
+          <option value="mensal">Mensal</option>
+          <option value="anual">Anual</option>
+          <option value="full">Full (perpétua)</option>
+        </select>
+      </label>
+      <p class="muted">Nova vigência: <b id="plano-preview">—</b></p>
+      <div class="erro" id="dlg-plano-erro"></div>
+      <div class="actions">
+        <button type="button" class="ghost" data-fechar>Cancelar</button>
+        <button type="submit">Trocar plano</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- dialog usuário -->
+  <dialog id="dlg-user">
+    <form id="form-user">
+      <h3 id="dlg-user-titulo">Novo usuário</h3>
+      <label>Nome <input name="nome" required maxlength="160" /></label>
+      <label>E-mail <input name="email" type="email" required maxlength="190" /></label>
+      <label id="lbl-senha">Senha (mín. 8) <input name="senha" type="password" minlength="8" /></label>
+      <div class="erro" id="dlg-user-erro"></div>
+      <div class="actions">
+        <button type="button" class="ghost" data-fechar>Cancelar</button>
+        <button type="submit">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- dialog possível cliente -->
+  <dialog id="dlg-lead">
+    <form id="form-lead">
+      <h3>Possível cliente</h3>
+      <p class="muted" id="lead-cnpj-txt"></p>
+      <label>Razão social <input name="razao_social" maxlength="180" /></label>
+      <label>Situação
+        <select name="situacao">
+          <option value="novo">Novo</option>
+          <option value="em_contato">Em contato</option>
+          <option value="cliente">Cliente</option>
+          <option value="descartado">Descartado</option>
+        </select>
+      </label>
+      <label>Observação <input name="observacao" maxlength="500" /></label>
+      <div class="erro" id="dlg-lead-erro"></div>
+      <div class="actions">
+        <button type="button" class="ghost" data-fechar>Cancelar</button>
+        <button type="submit">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const $$ = (s) => [...document.querySelectorAll(s)];
+    const TOKEN_KEY = 'dcf-lic-token';
+    let token = localStorage.getItem(TOKEN_KEY) || '';
+
+    const api = (p, opts = {}) =>
+      fetch('/api/v1' + p, {
+        ...opts,
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token, ...(opts.headers || {}) }
+      });
+
+    function irParaLogin() {
+      token = '';
+      localStorage.removeItem(TOKEN_KEY);
+      $('#app').classList.add('hide');
+      $('#login').classList.remove('hide');
+    }
+    function erros(j) {
+      return (j && (j.detalhes || [j.erro])) ? (j.detalhes || [j.erro]).join(' · ') : 'falha';
+    }
+
+    /* ---------- login ---------- */
+    $('#form-login').onsubmit = async (e) => {
+      e.preventDefault();
+      $('#login-erro').textContent = '';
+      const f = e.target;
+      const res = await api('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: f.email.value, senha: f.senha.value })
+      });
+      if (!res.ok) {
+        $('#login-erro').textContent = res.status === 401 ? 'E-mail ou senha inválidos.' : 'Não foi possível entrar.';
+        return;
+      }
+      const { token: t, usuario } = await res.json();
+      token = t;
+      localStorage.setItem(TOKEN_KEY, t);
+      entrar(usuario);
+    };
+    $('#btn-logout').onclick = irParaLogin;
+
+    function entrar(usuario) {
+      $('#quem').textContent = usuario.nome + ' · ' + usuario.email;
+      $('#login').classList.add('hide');
+      $('#app').classList.remove('hide');
+      carregarLicencas();
+    }
+
+    /* ---------- tabs ---------- */
+    $$('nav button').forEach((b) => (b.onclick = () => {
+      $$('nav button').forEach((x) => x.classList.toggle('on', x === b));
+      $('#tab-licencas').classList.toggle('hide', b.dataset.tab !== 'licencas');
+      $('#tab-leads').classList.toggle('hide', b.dataset.tab !== 'leads');
+      $('#tab-usuarios').classList.toggle('hide', b.dataset.tab !== 'usuarios');
+      if (b.dataset.tab === 'usuarios') carregarUsuarios();
+      if (b.dataset.tab === 'leads') carregarLeads();
+    }));
+
+    /* ---------- licenças ---------- */
+    const fmtData = (d) => (d ? d.split('-').reverse().join('/') : '—');
+
+    async function carregarLicencas() {
+      $('#msg-lic').textContent = '';
+      const p = new URLSearchParams();
+      if ($('#filtro-q').value) p.set('q', $('#filtro-q').value);
+      if ($('#filtro-status').value) p.set('status', $('#filtro-status').value);
+      const res = await api('/admin/licencas?' + p);
+      if (res.status === 401) return irParaLogin();
+      const linhas = await res.json();
+      if (!linhas.length) return ($('#lista-lic').innerHTML = '<div class="empty">Nenhuma licença.</div>');
+      $('#lista-lic').innerHTML = `<table><thead><tr>
+          <th>Cliente</th><th>Plano</th><th>Chave</th><th>Vigência</th><th>Situação</th><th></th></tr></thead>
+        <tbody>${linhas.map(linhaLic).join('')}</tbody></table>`;
+      $$('[data-edit-lic]').forEach((b) => (b.onclick = () => abrirLic(JSON.parse(b.dataset.editLic))));
+      $$('[data-toggle-lic]').forEach((b) => (b.onclick = () => toggleLic(JSON.parse(b.dataset.toggleLic))));
+      $$('[data-renovar-lic]').forEach((b) => (b.onclick = () => abrirRenovar(JSON.parse(b.dataset.renovarLic))));
+      $$('[data-plano-lic]').forEach((b) => (b.onclick = () => abrirPlano(JSON.parse(b.dataset.planoLic))));
+      $$('[data-grupo-lic]').forEach((b) => (b.onclick = () => abrirGrupo(JSON.parse(b.dataset.grupoLic))));
+      $$('[data-del-lic]').forEach((b) => (b.onclick = () => removerLic(b.dataset.delLic)));
+    }
+    const PLANO_LABEL = { full: 'Full', anual: 'Anual', mensal: 'Mensal' };
+    function linhaLic(l) {
+      const j = JSON.stringify(l).replace(/"/g, '&quot;');
+      const acao = l.status === 'ativa' ? 'Suspender' : 'Reativar';
+      const vig = l.fim ? `${fmtData(l.inicio)} → ${fmtData(l.fim)}` : `${fmtData(l.inicio)} → perpétua`;
+      return `<tr>
+        <td><b>${l.cliente_nome}</b><br><span class="muted">${l.cliente_cnpj}</span>${
+          l.grupo_total > 0 ? `<br><span class="muted">+ ${l.grupo_total} no grupo</span>` : ''
+        }</td>
+        <td>${PLANO_LABEL[l.plano] || l.plano}</td>
+        <td><code>${l.chave}</code></td>
+        <td>${vig}<br><span class="muted">${l.fim ? 'tol. ' + l.tolerancia_dias + 'd' : ''}</span></td>
+        <td><span class="pill ${l.veredito.status}">${l.veredito.status}</span><br><span class="muted">${l.veredito.aviso || ''}</span></td>
+        <td style="white-space:nowrap">
+          <button class="sm ghost" data-edit-lic="${j}">Editar</button>
+          ${l.plano === 'full' ? '' : `<button class="sm ghost" data-renovar-lic="${j}">Renovar</button>`}
+          <button class="sm ghost" data-plano-lic="${j}">Plano</button>
+          <button class="sm ghost" data-grupo-lic="${j}">Grupo</button>
+          <button class="sm ghost" data-toggle-lic="${j}">${acao}</button>
+          <button class="sm danger" data-del-lic="${l.id}">Excluir</button>
+        </td></tr>`;
+    }
+
+    const formLic = $('#form-lic');
+    function ajustarFimPorPlano({ recalcular = false } = {}) {
+      const full = formLic.plano.value === 'full';
+      $('#lbl-fim').style.opacity = full ? 0.45 : 1;
+      formLic.fim.disabled = full;
+      formLic.fim.required = !full;
+      if (full) formLic.fim.value = '';
+      else if ((recalcular || !formLic.fim.value) && formLic.inicio.value) {
+        const d = new Date(formLic.inicio.value + 'T00:00:00Z');
+        if (formLic.plano.value === 'anual') d.setUTCFullYear(d.getUTCFullYear() + 1);
+        else d.setUTCMonth(d.getUTCMonth() + 1);
+        formLic.fim.value = d.toISOString().slice(0, 10);
+      }
+    }
+    formLic.plano.onchange = () => ajustarFimPorPlano({ recalcular: true });
+    formLic.inicio.onchange = () => ajustarFimPorPlano({ recalcular: true });
+
+    let licId = null;
+    function abrirLic(l) {
+      licId = l ? l.id : null;
+      $('#dlg-lic-titulo').textContent = l ? 'Editar licença' : 'Nova licença';
+      $('#dlg-lic-erro').textContent = '';
+      const f = formLic;
+      f.reset();
+      if (l) for (const k of ['cliente_nome', 'cliente_cnpj', 'plano', 'inicio', 'fim', 'tolerancia_dias', 'status', 'observacao'])
+        if (f[k]) f[k].value = l[k] ?? '';
+      ajustarFimPorPlano();
+      $('#dlg-lic').showModal();
+    }
+    $('#btn-nova-lic').onclick = () => abrirLic(null);
+    $('#form-lic').onsubmit = async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const body = {
+        cliente_nome: f.cliente_nome.value, cliente_cnpj: f.cliente_cnpj.value,
+        plano: f.plano.value,
+        inicio: f.inicio.value,
+        fim: f.plano.value === 'full' ? null : f.fim.value,
+        tolerancia_dias: Number(f.tolerancia_dias.value || 7),
+        status: f.status.value, observacao: f.observacao.value
+      };
+      const res = await api('/admin/licencas' + (licId ? '/' + licId : ''), {
+        method: licId ? 'PATCH' : 'POST', body: JSON.stringify(body)
+      });
+      if (res.ok) { $('#dlg-lic').close(); carregarLicencas(); }
+      else $('#dlg-lic-erro').textContent = erros(await res.json().catch(() => null));
+    };
+    async function toggleLic(l) {
+      await api('/admin/licencas/' + l.id, { method: 'PATCH', body: JSON.stringify({ status: l.status === 'ativa' ? 'suspensa' : 'ativa' }) });
+      carregarLicencas();
+    }
+    async function removerLic(id) {
+      if (!confirm('Excluir esta licença? (o histórico de ativações vai junto)')) return;
+      await api('/admin/licencas/' + id, { method: 'DELETE' });
+      carregarLicencas();
+    }
+
+    /* ---------- renovação ---------- */
+    let renovarLicRef = null;
+    function calcPreviewRenovar() {
+      const l = renovarLicRef;
+      if (!l) return;
+      const n = Number($('#renovar-periodos').value || 1);
+      const hoje = new Date().toISOString().slice(0, 10);
+      const base = l.fim && l.fim > hoje ? l.fim : hoje;
+      const d = new Date(base + 'T00:00:00Z');
+      for (let i = 0; i < n; i++) {
+        if (l.plano === 'anual') d.setUTCFullYear(d.getUTCFullYear() + 1);
+        else d.setUTCMonth(d.getUTCMonth() + 1);
+      }
+      $('#renovar-preview').textContent = fmtData(d.toISOString().slice(0, 10));
+    }
+    function abrirRenovar(l) {
+      renovarLicRef = l;
+      $('#dlg-renovar-erro').textContent = '';
+      $('#renovar-cliente').textContent = l.cliente_nome + ' · ' + (PLANO_LABEL[l.plano] || l.plano) +
+        ' · vence ' + fmtData(l.fim);
+      $('#renovar-unidade').textContent = l.plano === 'anual' ? 'ano(s)' : 'mês(es)';
+      $('#renovar-periodos').value = '1';
+      calcPreviewRenovar();
+      $('#dlg-renovar').showModal();
+    }
+    $('#renovar-periodos').onchange = calcPreviewRenovar;
+    $('#form-renovar').onsubmit = async (e) => {
+      e.preventDefault();
+      const res = await api('/admin/licencas/' + renovarLicRef.id + '/renovar', {
+        method: 'POST', body: JSON.stringify({ periodos: Number($('#renovar-periodos').value || 1) })
+      });
+      if (res.ok) { $('#dlg-renovar').close(); carregarLicencas(); }
+      else $('#dlg-renovar-erro').textContent = erros(await res.json().catch(() => null));
+    };
+
+    /* ---------- troca de plano ---------- */
+    let planoLicRef = null;
+    function calcPreviewPlano() {
+      const l = planoLicRef;
+      if (!l) return;
+      const novo = $('#plano-novo').value;
+      if (novo === 'full') { $('#plano-preview').textContent = 'perpétua (sem expiração)'; return; }
+      const hoje = new Date().toISOString().slice(0, 10);
+      const base = l.fim && l.fim > hoje ? l.fim : hoje;
+      const d = new Date(base + 'T00:00:00Z');
+      if (novo === 'anual') d.setUTCFullYear(d.getUTCFullYear() + 1);
+      else d.setUTCMonth(d.getUTCMonth() + 1);
+      $('#plano-preview').textContent = 'até ' + fmtData(d.toISOString().slice(0, 10));
+    }
+    function abrirPlano(l) {
+      planoLicRef = l;
+      $('#dlg-plano-erro').textContent = '';
+      $('#plano-cliente').textContent = l.cliente_nome + ' · plano atual: ' + (PLANO_LABEL[l.plano] || l.plano);
+      $('#plano-novo').value = l.plano === 'mensal' ? 'anual' : 'mensal';
+      calcPreviewPlano();
+      $('#dlg-plano').showModal();
+    }
+    $('#plano-novo').onchange = calcPreviewPlano;
+    $('#form-plano').onsubmit = async (e) => {
+      e.preventDefault();
+      const res = await api('/admin/licencas/' + planoLicRef.id + '/plano', {
+        method: 'POST', body: JSON.stringify({ plano: $('#plano-novo').value })
+      });
+      if (res.ok) { $('#dlg-plano').close(); carregarLicencas(); }
+      else $('#dlg-plano-erro').textContent = erros(await res.json().catch(() => null));
+    };
+
+    /* ---------- grupo de CNPJs ---------- */
+    let grupoLicId = null;
+    async function abrirGrupo(l) {
+      grupoLicId = l.id;
+      $('#dlg-grupo-erro').textContent = '';
+      $('#grupo-cnpj').value = '';
+      $('#grupo-razao').value = '';
+      $('#grupo-cliente').textContent = l.cliente_nome;
+      await renderGrupo();
+      $('#dlg-grupo').showModal();
+    }
+    async function renderGrupo() {
+      const res = await api('/admin/licencas/' + grupoLicId);
+      if (!res.ok) { $('#grupo-lista').innerHTML = ''; return; }
+      const lic = await res.json();
+      $('#grupo-lista').innerHTML = [
+        `<div class="item contratante"><span>${lic.cliente_cnpj}</span><span class="sp"></span><span class="muted">contratante</span></div>`,
+        ...lic.grupo.map((g) => `<div class="item"><span>${g.cnpj}${g.razao_social ? ' · ' + g.razao_social : ''}</span><span class="sp"></span><button type="button" class="sm danger" data-rm-cnpj="${g.id}">remover</button></div>`)
+      ].join('') || '<span class="muted">Só o contratante.</span>';
+      $$('[data-rm-cnpj]').forEach((b) => (b.onclick = () => removerCnpj(b.dataset.rmCnpj)));
+    }
+    async function removerCnpj(cnpjId) {
+      const res = await api('/admin/licencas/' + grupoLicId + '/cnpjs/' + cnpjId, { method: 'DELETE' });
+      if (res.ok) { renderGrupo(); carregarLicencas(); }
+      else $('#dlg-grupo-erro').textContent = erros(await res.json().catch(() => null));
+    }
+    async function adicionarCnpj() {
+      $('#dlg-grupo-erro').textContent = '';
+      const res = await api('/admin/licencas/' + grupoLicId + '/cnpjs', {
+        method: 'POST',
+        body: JSON.stringify({ cnpj: $('#grupo-cnpj').value, razao_social: $('#grupo-razao').value })
+      });
+      if (res.ok) { $('#grupo-cnpj').value = ''; $('#grupo-razao').value = ''; renderGrupo(); carregarLicencas(); }
+      else $('#dlg-grupo-erro').textContent = erros(await res.json().catch(() => null));
+    }
+    $('#grupo-add').onclick = adicionarCnpj;
+    ['#grupo-cnpj', '#grupo-razao'].forEach((sel) =>
+      $(sel).addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); adicionarCnpj(); } })
+    );
+    $('#btn-buscar').onclick = carregarLicencas;
+    $('#filtro-q').addEventListener('keydown', (e) => e.key === 'Enter' && carregarLicencas());
+
+    /* ---------- possíveis clientes ---------- */
+    const LEAD_SIT_LABEL = { novo: 'Novo', em_contato: 'Em contato', cliente: 'Cliente', descartado: 'Descartado' };
+    const fmtDataHora = (s) => (s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleString('pt-BR') : '—');
+
+    const numBR = (x) => Number(x || 0).toLocaleString('pt-BR');
+
+    function barras(linhas) {
+      const max = Math.max(1, ...linhas.map((l) => Number(l.n) || 0));
+      return `<div class="bars">${linhas.map((l) => {
+        const n = Number(l.n) || 0;
+        return `<div class="bar-row">
+          <span class="lbl" title="${l.label}">${l.label}</span>
+          <span class="bar-track"><span class="bar-fill" style="width:${(n / max) * 100}%;${l.cor ? 'background:' + l.cor : ''}"></span></span>
+          <span class="num">${numBR(n)}</span>
+        </div>`;
+      }).join('')}</div>`;
+    }
+
+    async function carregarResumo() {
+      const res = await api('/admin/leads/resumo');
+      if (res.status === 401) return irParaLogin();
+      if (!res.ok) { $('#lead-painel').innerHTML = ''; return; }
+      const r = await res.json();
+      const kpi = (k, v) => `<div class="kpi"><div class="v">${numBR(v)}</div><div class="k">${k}</div></div>`;
+      const kpis = `<div class="kpis">
+        ${kpi('Leads', r.total)}
+        ${kpi('Novos · 7 dias', r.novos_7d)}
+        ${kpi('Novos · 30 dias', r.novos_30d)}
+        ${kpi('Ativos · 7 dias', r.ativos_7d)}
+        ${kpi('Viraram cliente', r.cliente)}
+        ${kpi('Consultas totais', r.consultas_total)}
+      </div>`;
+
+      const porSituacao = barras([
+        { label: 'Novo', n: r.novo, cor: '#8a7be8' },
+        { label: 'Em contato', n: r.em_contato, cor: 'var(--warn)' },
+        { label: 'Cliente', n: r.cliente, cor: 'var(--ok)' },
+        { label: 'Descartado', n: r.descartado, cor: 'var(--bad)' }
+      ]);
+      const cobertura = barras([
+        { label: 'Coberto', n: r.cobertos, cor: 'var(--ok)' },
+        { label: 'Fora da licença', n: r.fora, cor: 'var(--bad)' },
+        { label: 'Sem CNPJ', n: r.sem_cnpj, cor: 'var(--mute)' }
+      ]);
+      const porStatus = (r.por_status || []).length
+        ? barras(r.por_status.map((s) => ({ label: s.status, n: s.n })))
+        : '<span class="muted">Sem dados.</span>';
+
+      // série de 30 dias — preenche os dias sem registro
+      const dias = [];
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const iso = d.toISOString().slice(0, 10);
+        const achou = (r.serie_novos || []).find((x) => String(x.dia).slice(0, 10) === iso);
+        dias.push({ iso, n: achou ? Number(achou.n) : 0 });
+      }
+      const maxDia = Math.max(1, ...dias.map((d) => d.n));
+      const spark = `<div class="spark">${dias.map((d) =>
+        `<div title="${fmtData(d.iso)}: ${d.n} novo(s)" style="height:${(d.n / maxDia) * 100}%"></div>`).join('')}</div>
+        <div class="spark-eixo"><span>${fmtData(dias[0].iso)}</span><span>hoje</span></div>`;
+
+      const top = (r.top_consultas || []).length
+        ? `<table style="margin-top:2px"><thead><tr><th>CNPJ</th><th>Situação</th><th>Consultas</th><th>Última</th></tr></thead>
+           <tbody>${r.top_consultas.map((t) => `<tr>
+             <td>${t.cnpj}${t.razao_social ? `<br><span class="muted">${t.razao_social}</span>` : ''}</td>
+             <td><span class="pill ${t.situacao}">${LEAD_SIT_LABEL[t.situacao] || t.situacao}</span></td>
+             <td>${numBR(t.total_consultas)}</td>
+             <td class="muted">${fmtDataHora(t.ultima_consulta)}</td></tr>`).join('')}</tbody></table>`
+        : '<div class="empty">Nenhum lead ainda.</div>';
+
+      $('#lead-painel').innerHTML = kpis + `
+        <div class="paineis">
+          <div class="painel"><h4>Por situação</h4>${porSituacao}</div>
+          <div class="painel"><h4>Cobertura da licença informada</h4>${cobertura}</div>
+          <div class="painel"><h4>Veredito da última validação</h4>${porStatus}</div>
+          <div class="painel"><h4>Novos leads · últimos 30 dias</h4>${spark}</div>
+        </div>
+        <div class="painel"><h4>Mais ativos (nº de consultas)</h4>${top}</div>`;
+    }
+
+    async function carregarLeads() {
+      carregarResumo();
+      $('#msg-lead').textContent = '';
+      const p = new URLSearchParams();
+      if ($('#lead-q').value) p.set('q', $('#lead-q').value);
+      if ($('#lead-situacao').value) p.set('situacao', $('#lead-situacao').value);
+      const res = await api('/admin/leads?' + p);
+      if (res.status === 401) return irParaLogin();
+      const linhas = await res.json();
+      if (!linhas.length) return ($('#lista-lead').innerHTML = '<div class="empty">Nenhum registro.</div>');
+      $('#lista-lead').innerHTML = `<table><thead><tr>
+          <th>CNPJ</th><th>Chave informada</th><th>Última validação</th><th>Consultas</th><th>Situação</th><th></th></tr></thead>
+        <tbody>${linhas.map(linhaLead).join('')}</tbody></table>`;
+      $$('[data-edit-lead]').forEach((b) => (b.onclick = () => abrirLead(JSON.parse(b.dataset.editLead))));
+      $$('[data-del-lead]').forEach((b) => (b.onclick = () => removerLead(b.dataset.delLead)));
+    }
+    function linhaLead(l) {
+      const j = JSON.stringify(l).replace(/"/g, '&quot;');
+      const cob = l.ultimo_coberto == null ? '' : l.ultimo_coberto ? ' · coberto' : ' · fora da licença';
+      return `<tr>
+        <td><b>${l.cnpj}</b>${l.razao_social ? `<br><span class="muted">${l.razao_social}</span>` : ''}</td>
+        <td>${l.chave_informada ? `<code>${l.chave_informada}</code>` : '<span class="muted">—</span>'}
+          <br><span class="muted">${l.ultimo_status || ''}${cob}</span></td>
+        <td class="muted">${fmtDataHora(l.ultima_consulta)}<br>1ª: ${fmtDataHora(l.primeira_consulta)}</td>
+        <td>${l.total_consultas}</td>
+        <td><span class="pill ${l.situacao}">${LEAD_SIT_LABEL[l.situacao] || l.situacao}</span>${
+          l.observacao ? `<br><span class="muted">${l.observacao}</span>` : ''
+        }</td>
+        <td style="white-space:nowrap">
+          <button class="sm ghost" data-edit-lead="${j}">Editar</button>
+          <button class="sm danger" data-del-lead="${l.id}">Excluir</button>
+        </td></tr>`;
+    }
+    let leadId = null;
+    function abrirLead(l) {
+      leadId = l.id;
+      $('#dlg-lead-erro').textContent = '';
+      $('#lead-cnpj-txt').textContent = l.cnpj + (l.chave_informada ? ' · chave ' + l.chave_informada : '');
+      const f = $('#form-lead');
+      f.reset();
+      f.razao_social.value = l.razao_social ?? '';
+      f.situacao.value = l.situacao ?? 'novo';
+      f.observacao.value = l.observacao ?? '';
+      $('#dlg-lead').showModal();
+    }
+    $('#form-lead').onsubmit = async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const res = await api('/admin/leads/' + leadId, {
+        method: 'PATCH',
+        body: JSON.stringify({ razao_social: f.razao_social.value, situacao: f.situacao.value, observacao: f.observacao.value })
+      });
+      if (res.ok) { $('#dlg-lead').close(); carregarLeads(); }
+      else $('#dlg-lead-erro').textContent = erros(await res.json().catch(() => null));
+    };
+    async function removerLead(id) {
+      if (!confirm('Excluir este registro?')) return;
+      await api('/admin/leads/' + id, { method: 'DELETE' });
+      carregarLeads();
+    }
+    $('#lead-buscar').onclick = carregarLeads;
+    $('#lead-atualizar').onclick = carregarLeads;
+    $('#lead-q').addEventListener('keydown', (e) => e.key === 'Enter' && carregarLeads());
+
+    /* ---------- usuários ---------- */
+    async function carregarUsuarios() {
+      $('#msg-user').textContent = '';
+      const res = await api('/usuarios');
+      if (res.status === 401) return irParaLogin();
+      const us = await res.json();
+      $('#lista-user').innerHTML = `<table><thead><tr>
+          <th>Nome</th><th>E-mail</th><th>Status</th><th>Último login</th><th></th></tr></thead>
+        <tbody>${us.map(linhaUser).join('')}</tbody></table>`;
+      $$('[data-edit-user]').forEach((b) => (b.onclick = () => abrirUser(JSON.parse(b.dataset.editUser))));
+      $$('[data-toggle-user]').forEach((b) => (b.onclick = () => toggleUser(JSON.parse(b.dataset.toggleUser))));
+      $$('[data-del-user]').forEach((b) => (b.onclick = () => removerUser(b.dataset.delUser)));
+    }
+    function linhaUser(u) {
+      const j = JSON.stringify(u).replace(/"/g, '&quot;');
+      const login = u.ultimo_login ? new Date(u.ultimo_login.replace(' ', 'T') + 'Z').toLocaleString('pt-BR') : '—';
+      return `<tr>
+        <td><b>${u.nome}</b></td>
+        <td>${u.email}</td>
+        <td><span class="pill ${u.ativo ? 'on' : 'off'}">${u.ativo ? 'ativo' : 'inativo'}</span></td>
+        <td class="muted">${login}</td>
+        <td style="white-space:nowrap">
+          <button class="sm ghost" data-edit-user="${j}">Editar</button>
+          <button class="sm ghost" data-toggle-user="${j}">${u.ativo ? 'Desativar' : 'Ativar'}</button>
+          <button class="sm danger" data-del-user="${u.id}">Excluir</button>
+        </td></tr>`;
+    }
+    let userId = null;
+    function abrirUser(u) {
+      userId = u ? u.id : null;
+      $('#dlg-user-titulo').textContent = u ? 'Editar usuário' : 'Novo usuário';
+      $('#dlg-user-erro').textContent = '';
+      const f = $('#form-user');
+      f.reset();
+      f.senha.required = !u;
+      $('#lbl-senha').firstChild.textContent = u ? 'Nova senha (deixe em branco p/ manter) ' : 'Senha (mín. 8) ';
+      if (u) { f.nome.value = u.nome; f.email.value = u.email; }
+      $('#dlg-user').showModal();
+    }
+    $('#btn-novo-user').onclick = () => abrirUser(null);
+    $('#form-user').onsubmit = async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const body = { nome: f.nome.value, email: f.email.value };
+      if (f.senha.value) body.senha = f.senha.value;
+      const res = await api('/usuarios' + (userId ? '/' + userId : ''), {
+        method: userId ? 'PATCH' : 'POST', body: JSON.stringify(body)
+      });
+      if (res.ok) { $('#dlg-user').close(); carregarUsuarios(); }
+      else $('#dlg-user-erro').textContent = erros(await res.json().catch(() => null));
+    };
+    async function toggleUser(u) {
+      const res = await api('/usuarios/' + u.id, { method: 'PATCH', body: JSON.stringify({ ativo: !u.ativo }) });
+      if (!res.ok) $('#msg-user').textContent = erros(await res.json().catch(() => null));
+      carregarUsuarios();
+    }
+    async function removerUser(id) {
+      if (!confirm('Excluir este usuário?')) return;
+      const res = await api('/usuarios/' + id, { method: 'DELETE' });
+      if (!res.ok) $('#msg-user').textContent = erros(await res.json().catch(() => null));
+      carregarUsuarios();
+    }
+
+    /* dialogs: botões "Cancelar" */
+    $$('[data-fechar]').forEach((b) => (b.onclick = () => b.closest('dialog').close()));
+
+    /* ---------- boot ---------- */
+    (async () => {
+      if (!token) return irParaLogin();
+      const res = await api('/auth/eu');
+      if (res.ok) entrar(await res.json());
+      else irParaLogin();
+    })();
+  </script>
+</body>
+</html>
