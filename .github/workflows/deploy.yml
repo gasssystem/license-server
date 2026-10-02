@@ -1,0 +1,44 @@
+name: Deploy cPanel
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install and validate
+        run: |
+          npm ci
+          node --check server.cjs
+          find src -name '*.js' -print0 | xargs -0 -n1 node --check
+
+      - name: Deploy to cPanel
+        env:
+          CPANEL_SSH_KEY: ${{ secrets.CPANEL_SSH_KEY }}
+          CPANEL_SSH_HOST: 187.108.207.21
+          CPANEL_SSH_USER: gasssyst
+          CPANEL_SSH_PORT: '215'
+          CPANEL_KNOWN_HOSTS_FILE: .github/cpanel_known_hosts
+          CPANEL_APP_PATH: /home/gasssyst/license-server
+          CPANEL_NODE_ENV_PATH: /home/gasssyst/nodevenv/license-server/20/bin/activate
+          CPANEL_HEALTH_URL: https://licencas.gasssystem.com.br/health
+        run: bash .github/scripts/deploy-cpanel.sh
