@@ -36,7 +36,11 @@ test -d "$app_path"
 test -f "$node_env_path"
 tar -xzf "$archive" --no-same-owner -C "$app_path"
 cd "$app_path"
+# O activate do Node no cPanel usa variaveis que podem nao existir (ex.:
+# CL_VIRTUAL_ENV): com "set -u" ligado o deploy morria aqui.
+set +u
 source "$node_env_path"
+set -u
 npm install --omit=dev
 npm run migrate
 mkdir -p tmp
