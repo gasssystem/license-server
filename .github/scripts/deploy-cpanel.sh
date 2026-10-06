@@ -38,6 +38,7 @@ tar -xzf "$archive" --no-same-owner -C "$app_path"
 cd "$app_path"
 source "$node_env_path"
 npm install --omit=dev
+npm run migrate
 mkdir -p tmp
 touch tmp/restart.txt
 REMOTE
