@@ -182,38 +182,28 @@ Node.js Selector). Todas as dependências são JS puro (sem compilar nada).
 - A página de login também responde na raiz do subdomínio (o Passenger serve
   `public/` como docroot) — normal.
 
-### Deploy automático
-
-O workflow `.github/workflows/deploy.yml` publica automaticamente cada push em
-`master` e também pode ser iniciado em **Actions → Deploy cPanel → Run workflow**.
-Ele valida a sintaxe JavaScript, envia os arquivos da aplicação por SSH, instala
-as dependências no virtualenv do cPanel, reinicia o Passenger e verifica a URL
-de health check. `.env`, `node_modules` e arquivos fora do pacote de deploy não
-são enviados nem removidos.
-
-O destino e a chave pública do servidor estão fixados no workflow. Configure
-apenas o secret `CPANEL_SSH_KEY` no repositório. Para usar a identidade SSH já
-configurada no projeto BPM:
+### Deploy (por SSH, da máquina de quem publica)
 
 ```bash
-gh auth login
-gh secret set CPANEL_SSH_KEY < ~/.ssh/gct_deploy
+npm run deploy
 ```
 
-O redirecionamento envia a chave diretamente ao GitHub CLI sem imprimi-la no
-terminal. Essa identidade concede acesso SSH à conta `gasssyst`; para menor
-privilégio, prefira depois criar uma chave dedicada apenas para deploy.
+Publica o commit atual: valida a sintaxe, envia os arquivos da aplicação por
+SSH, roda `npm install` e **`npm run migrate`** no virtualenv do cPanel, reinicia
+o Passenger e confere o `/health`. `.env`, `node_modules` e arquivos fora do
+pacote não são enviados nem removidos. Recusa publicar com alteração não
+commitada no código (`DEPLOY_FORCE=1 npm run deploy` ignora).
 
-Resumo do destino configurado:
+Usa a configuração SSH local — `~/.ssh/config` com o `Host 187.108.207.21`
+(porta 215, usuário `gasssyst`, `IdentityFile ~/.ssh/gct_deploy`).
 
-`gasssyst@187.108.207.21:215`, aplicação `/home/gasssyst/license-server`,
-virtualenv `/home/gasssyst/nodevenv/license-server/20` e health check
-`https://licencas.gasssystem.com.br/health`. A chave de host Ed25519 em
-`.github/cpanel_known_hosts` foi obtida da entrada já confiada pelo SSH local.
+Não há deploy automático no push: o firewall da TurboCloud bloqueia SSH vindo
+dos servidores do GitHub Actions (a conexão expira sem resposta). Por isso o
+workflow foi removido (06/10/2026).
 
-As migrações SQL continuam manuais pelo **Run JS script → migrate** no cPanel
-quando uma nova migração for adicionada. Assim, um push de código não altera o
-banco de produção sem uma etapa explícita.
+Destino: `gasssyst@187.108.207.21:215`, aplicação `/home/gasssyst/license-server`,
+virtualenv `/home/gasssyst/nodevenv/license-server/20`, health check
+`https://licencas.gasssystem.com.br/health`.
 
 ## API
 
