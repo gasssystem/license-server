@@ -38,6 +38,14 @@
     .pill.novo { background: #e8ecfb; color: var(--brand-dark); }
     .pill.em_contato { background: #fff1e0; color: var(--warn); }
     .pill.cliente { background: #e3f7ec; color: var(--ok); }
+    /* funcionalidades contratadas (dialog licença) */
+    .funcs { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 10px; max-height: 300px; overflow: auto; }
+    .funcs .mod { display: grid; gap: 4px; }
+    .funcs .mod > label { font-weight: 600; color: var(--ink); }
+    .funcs .mod .itens { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 4px 12px; padding-left: 22px; }
+    dialog .light-opt { display: flex; align-items: flex-start; gap: 6px; margin-top: 8px; font-size: 13px; color: var(--ink); }
+    .pill.light { background: #e8ecfb; color: var(--brand-dark); }
+    dialog .funcs label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink); }
     /* painel de monitoramento (leads) */
     .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 14px; }
     .kpi { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 13px 15px; }
@@ -175,6 +183,12 @@
           <option value="bpo_fopag">BPO FOPAG GASS</option>
         </select>
       </label>
+      <div id="lic-funcs-box">
+        <div class="muted" style="font-size:12.5px; margin-bottom:4px;">Funcionalidades contratadas</div>
+        <div class="funcs" id="lic-funcs"></div>
+        <label class="light-opt"><input type="checkbox" name="light" /> <span><b>Licença light</b> — o GassFlow! esconde do menu o que não foi contratado
+          <span class="muted">(desmarcado: mostra com cadeado 🔒, como vitrine)</span></span></label>
+      </div>
       <label>Plano
         <select name="plano">
           <option value="anual">Anual</option>
@@ -375,6 +389,7 @@
       const res = await api('/admin/licencas?' + p);
       if (res.status === 401) return irParaLogin();
       const linhas = await res.json();
+      await carregarCatalogo();
       if (!linhas.length) return ($('#lista-lic').innerHTML = '<div class="empty">Nenhuma licença.</div>');
       $('#lista-lic').innerHTML = `<table><thead><tr>
           <th>Cliente</th><th>Produto</th><th>Plano</th><th>Chave</th><th>Vigência</th><th>Situação</th><th></th></tr></thead>
@@ -387,6 +402,51 @@
       $$('[data-del-lic]').forEach((b) => (b.onclick = () => removerLic(b.dataset.delLic)));
     }
     const PRODUTO_LABEL = { gassflow_bpm: 'GassFlow! BPM', bpo_fopag: 'BPO FOPAG GASS' };
+
+    /* catálogo de módulos/funcionalidades (vem do servidor: src/lib/modulos.js) */
+    let catalogo = null;
+    async function carregarCatalogo() {
+      if (catalogo) return catalogo;
+      const res = await api('/admin/modulos');
+      if (res.ok) catalogo = await res.json();
+      return catalogo;
+    }
+    function resumoFuncs(l) {
+      if (!catalogo || l.produto !== catalogo.produto) return '';
+      const tem = new Set(l.funcionalidades || []);
+      const partes = catalogo.modulos
+        .map((m) => [m.nome, m.funcionalidades.filter((f) => tem.has(m.codigo + '.' + f.codigo)).length, m.funcionalidades.length])
+        .filter(([, n]) => n > 0)
+        .map(([nome, n, total]) => `${nome} ${n}/${total}`);
+      const light = l.light ? ' <span class="pill light" title="O GassFlow! esconde do menu o que não foi contratado">light</span>' : '';
+      return `${light}<br><span class="muted">${partes.length ? partes.join(' · ') : 'nenhuma funcionalidade'}</span>`;
+    }
+    function renderFuncs(marcadas) {
+      const tem = new Set(marcadas || []);
+      $('#lic-funcs').innerHTML = catalogo.modulos.map((m) => `
+        <div class="mod">
+          <label><input type="checkbox" data-mod="${m.codigo}" /> ${m.nome}</label>
+          <div class="itens">${m.funcionalidades.map((f) => {
+            const c = m.codigo + '.' + f.codigo;
+            return `<label><input type="checkbox" data-func="${c}" data-func-mod="${m.codigo}" ${tem.has(c) ? 'checked' : ''} /> ${f.nome}</label>`;
+          }).join('')}</div>
+        </div>`).join('');
+      const sincronizarModulo = (mod) => {
+        const itens = $$(`[data-func-mod="${mod}"]`);
+        const n = itens.filter((i) => i.checked).length;
+        const box = $(`[data-mod="${mod}"]`);
+        box.checked = n === itens.length;
+        box.indeterminate = n > 0 && n < itens.length;
+      };
+      catalogo.modulos.forEach((m) => sincronizarModulo(m.codigo));
+      $$('[data-mod]').forEach((b) => (b.onchange = () => {
+        $$(`[data-func-mod="${b.dataset.mod}"]`).forEach((i) => (i.checked = b.checked));
+      }));
+      $$('[data-func]').forEach((i) => (i.onchange = () => sincronizarModulo(i.dataset.funcMod)));
+    }
+    function ajustarFuncsPorProduto() {
+      $('#lic-funcs-box').classList.toggle('hide', !catalogo || formLic.produto.value !== catalogo.produto);
+    }
     const PLANO_LABEL = { full: 'Full', anual: 'Anual', mensal: 'Mensal' };
     function linhaLic(l) {
       const j = JSON.stringify(l).replace(/"/g, '&quot;');
@@ -396,7 +456,7 @@
         <td><b>${l.cliente_nome}</b><br><span class="muted">${l.cliente_cnpj}</span>${
           l.grupo_total > 0 ? `<br><span class="muted">+ ${l.grupo_total} no grupo</span>` : ''
         }</td>
-        <td>${PRODUTO_LABEL[l.produto] || l.produto}</td>
+        <td>${PRODUTO_LABEL[l.produto] || l.produto}${resumoFuncs(l)}</td>
         <td>${PLANO_LABEL[l.plano] || l.plano}</td>
         <td><code>${l.chave}</code></td>
         <td>${vig}<br><span class="muted">${l.fim ? 'tol. ' + l.tolerancia_dias + 'd' : ''}</span></td>
@@ -427,9 +487,11 @@
     }
     formLic.plano.onchange = () => ajustarFimPorPlano({ recalcular: true });
     formLic.inicio.onchange = () => ajustarFimPorPlano({ recalcular: true });
+    formLic.produto.onchange = ajustarFuncsPorProduto;
 
     let licId = null;
-    function abrirLic(l) {
+    async function abrirLic(l) {
+      await carregarCatalogo();
       licId = l ? l.id : null;
       $('#dlg-lic-titulo').textContent = l ? 'Editar licença' : 'Nova licença';
       $('#dlg-lic-erro').textContent = '';
@@ -437,7 +499,10 @@
       f.reset();
       if (l) for (const k of ['cliente_nome', 'cliente_cnpj', 'produto', 'plano', 'inicio', 'fim', 'tolerancia_dias', 'status', 'observacao'])
         if (f[k]) f[k].value = l[k] ?? '';
+      f.light.checked = !!(l && l.light);
       ajustarFimPorPlano();
+      if (catalogo) renderFuncs(l ? l.funcionalidades : []);
+      ajustarFuncsPorProduto();
       $('#dlg-lic').showModal();
     }
     $('#btn-nova-lic').onclick = () => abrirLic(null);
@@ -453,6 +518,10 @@
         tolerancia_dias: Number(f.tolerancia_dias.value || 7),
         status: f.status.value, observacao: f.observacao.value
       };
+      if (catalogo && body.produto === catalogo.produto) {
+        body.funcionalidades = $$('[data-func]').filter((i) => i.checked).map((i) => i.dataset.func);
+        body.light = f.light.checked;
+      }
       const res = await api('/admin/licencas' + (licId ? '/' + licId : ''), {
         method: licId ? 'PATCH' : 'POST', body: JSON.stringify(body)
       });

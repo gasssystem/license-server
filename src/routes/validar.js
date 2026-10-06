@@ -3,6 +3,7 @@ const { Router } = require('express');
 const { config } = require('../config.js');
 const { q } = require('../db.js');
 const { avaliarLicenca, cnpjValido, formatarCnpj, normalizarChave, soDigitos } = require('../lib/licenca.js');
+const { agruparPorModulo } = require('../lib/modulos.js');
 
 /**
  * Registra/atualiza o CNPJ como possível cliente (lead). Best-effort:
@@ -56,8 +57,13 @@ const GRACE_CNPJ_DIAS = 7;
  *   cliente: string|null,
  *   expira_em: 'YYYY-MM-DD'|null,
  *   dias_restantes: number,
- *   cnpj_coberto: boolean|null // null quando a instalação não enviou o CNPJ
+ *   cnpj_coberto: boolean|null, // null quando a instalação não enviou o CNPJ
+ *   funcionalidades: string[],  // liberadas agora: ['bpm.produtos', 'fiscal.documentos', ...]
+ *   modulos: { [modulo]: string[] }, // as mesmas, agrupadas: { bpm: ['produtos'], fiscal: ['documentos'] }
+ *   light: boolean // true → o app esconde do menu o que não está em funcionalidades (senão mostra com cadeado)
  * }
+ *
+ * funcionalidades/modulos vêm vazios quando a licença não está válida (valida=false).
  *
  * CNPJ não cadastrado na licença: enquanto a licença estiver válida, o acesso
  * fica liberado por GRACE_CNPJ_DIAS dias a partir do 1º contato (status
@@ -84,12 +90,15 @@ validarRouter.post('/validar', async (req, res, next) => {
         cliente: null,
         expira_em: null,
         dias_restantes: 0,
+        funcionalidades: [],
+        modulos: {},
+        light: false,
         verificado_em: agora()
       });
     }
 
     const [lic] = await q(
-      `SELECT id, cliente_nome, cliente_cnpj, produto, plano, status, inicio, fim, tolerancia_dias FROM licencas WHERE chave = :chave`,
+      `SELECT id, cliente_nome, cliente_cnpj, produto, plano, light, status, inicio, fim, tolerancia_dias FROM licencas WHERE chave = :chave`,
       { chave }
     );
 
@@ -103,6 +112,9 @@ validarRouter.post('/validar', async (req, res, next) => {
         cliente: null,
         expira_em: null,
         dias_restantes: 0,
+        funcionalidades: [],
+        modulos: {},
+        light: false,
         verificado_em: agora()
       });
     }
@@ -146,6 +158,14 @@ validarRouter.post('/validar', async (req, res, next) => {
     } else {
       veredito.cnpj_coberto = null;
     }
+
+    // Funcionalidades contratadas — só liberadas enquanto a licença vale.
+    const funcs = veredito.valida
+      ? await q(`SELECT codigo FROM licenca_funcionalidades WHERE licenca_id = :id ORDER BY codigo`, { id: lic.id })
+      : [];
+    veredito.funcionalidades = funcs.map((f) => f.codigo);
+    veredito.modulos = agruparPorModulo(veredito.funcionalidades);
+    veredito.light = lic.light === 1 || lic.light === true;
 
     // Carimbo do servidor — o cliente (Protheus) usa para saber quando revalidar
     // e não depender só do próprio relógio.

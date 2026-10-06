@@ -21,6 +21,38 @@ Uma **licença** = validade + status + cliente:
 | `inicio` / `fim` | vigência (datas); `fim` NULL = perpétua (plano full) |
 | `tolerancia_dias` | dias de uso **após** expirar antes de bloquear (padrão 7) |
 | **grupo de CNPJs** | `licenca_cnpjs`: outras empresas do grupo cobertas pela mesma licença |
+| **funcionalidades** | `licenca_funcionalidades`: o que o cliente contratou do GassFlow! (só produto `gassflow_bpm`) |
+| `light` | licença light: o GassFlow! **esconde** o que não foi contratado (padrão `0`) |
+
+### Módulos e funcionalidades
+
+O GassFlow! é vendido **por funcionalidade**: cada item de cada módulo do menu
+pode ser contratado separadamente. A licença guarda os códigos
+`modulo.funcionalidade` contratados; o catálogo fica em `src/lib/modulos.js`
+(espelha o menu do app — incluir um item novo não exige migração; não renomeie
+códigos já em uso).
+
+| módulo | funcionalidades (código) |
+|---|---|
+| BPM (`bpm`) | `produtos` · `clientes` · `fornecedores` · `naturezas` |
+| Fiscal (`fiscal`) | `multa_juros` · `documentos` (Transmissão de Documentos) |
+| Financeiro (`financeiro`) | `adiantamento` · `prestacao_contas` · `cartao_corporativo` · `integracao_serasa` · `cockpit` |
+| Envios (`envios`) | `documentos` (Envio de Documentos) |
+
+Na gerência, o cadastro da licença tem as caixas por módulo (marcar o módulo
+marca todas as funcionalidades dele). O `/validar` devolve as funcionalidades
+liberadas — vazias quando a licença não está válida.
+
+#### Licença light
+
+Por padrão (licença **completa**), o GassFlow! mostra no menu e nos painéis
+também o que o cliente **não** contratou, com cadeado 🔒 / "Não contratado" —
+funciona como vitrine para vender os outros módulos. Na **licença light**
+(`light = 1`, caixa "Licença light" no cadastro) o app **remove do menu** e dos
+cards tudo o que não está nas funcionalidades: o cliente só enxerga o que
+comprou. Um módulo some inteiro quando nenhuma funcionalidade dele foi
+contratada. O `/validar` informa com `"light": true`; as rotas continuam
+protegidas da mesma forma (acesso direto cai em "Não contratado").
 
 Quando a empresa contrata para o **grupo econômico**, a licença cobre o CNPJ
 contratante **+** os CNPJs cadastrados no grupo. Um CNPJ é "coberto" se for o
@@ -150,9 +182,38 @@ Node.js Selector). Todas as dependências são JS puro (sem compilar nada).
 - A página de login também responde na raiz do subdomínio (o Passenger serve
   `public/` como docroot) — normal.
 
-**Atualizar depois:** subir o código novo (git pull / novo zip) → *Run NPM Install*
-se mudou dependência → *Run JS script* → `migrate` se houver migração nova →
-**Restart**.
+### Deploy automático
+
+O workflow `.github/workflows/deploy.yml` publica automaticamente cada push em
+`master` e também pode ser iniciado em **Actions → Deploy cPanel → Run workflow**.
+Ele valida a sintaxe JavaScript, envia os arquivos da aplicação por SSH, instala
+as dependências no virtualenv do cPanel, reinicia o Passenger e verifica a URL
+de health check. `.env`, `node_modules` e arquivos fora do pacote de deploy não
+são enviados nem removidos.
+
+O destino e a chave pública do servidor estão fixados no workflow. Configure
+apenas o secret `CPANEL_SSH_KEY` no repositório. Para usar a identidade SSH já
+configurada no projeto BPM:
+
+```bash
+gh auth login
+gh secret set CPANEL_SSH_KEY < ~/.ssh/gct_deploy
+```
+
+O redirecionamento envia a chave diretamente ao GitHub CLI sem imprimi-la no
+terminal. Essa identidade concede acesso SSH à conta `gasssyst`; para menor
+privilégio, prefira depois criar uma chave dedicada apenas para deploy.
+
+Resumo do destino configurado:
+
+`gasssyst@187.108.207.21:215`, aplicação `/home/gasssyst/license-server`,
+virtualenv `/home/gasssyst/nodevenv/license-server/20` e health check
+`https://licencas.gasssystem.com.br/health`. A chave de host Ed25519 em
+`.github/cpanel_known_hosts` foi obtida da entrada já confiada pelo SSH local.
+
+As migrações SQL continuam manuais pelo **Run JS script → migrate** no cPanel
+quando uma nova migração for adicionada. Assim, um push de código não altera o
+banco de produção sem uma etapa explícita.
 
 ## API
 
@@ -178,7 +239,10 @@ Resposta (HTTP 200 sempre):
   "cliente": "Empresa X LTDA",
   "expira_em": "2026-12-31",
   "dias_restantes": 9,
-  "cnpj_coberto": true
+  "cnpj_coberto": true,
+  "funcionalidades": ["bpm.produtos", "fiscal.documentos"],
+  "modulos": { "bpm": ["produtos"], "fiscal": ["documentos"] },
+  "light": false
 }
 ```
 
@@ -194,9 +258,10 @@ GET  /api/v1/auth/eu       (Bearer token)    ->  usuário logado
 | método | rota | |
 |---|---|---|
 | GET | `/api/v1/admin/licencas?status=&cnpj=&q=` | listar |
-| POST | `/api/v1/admin/licencas` | criar (gera a chave) |
+| GET | `/api/v1/admin/modulos` | catálogo de módulos/funcionalidades |
+| POST | `/api/v1/admin/licencas` | criar (gera a chave; aceita `funcionalidades: [...]` e `light: true/false`) |
 | GET | `/api/v1/admin/licencas/:id` | detalhe + veredito + ativações |
-| PATCH | `/api/v1/admin/licencas/:id` | atualizar (status, fim, tolerância, cliente...) |
+| PATCH | `/api/v1/admin/licencas/:id` | atualizar (status, fim, tolerância, cliente, `funcionalidades` — substitui a lista, `light`...) |
 | DELETE | `/api/v1/admin/licencas/:id` | excluir (para desativar sem perder histórico, use `PATCH status=cancelada`) |
 | GET | `/api/v1/admin/licencas/:id/ativacoes` | check-ins daquela licença |
 | POST | `/api/v1/admin/licencas/:id/renovar` | renovar `{ periodos? }` ou `{ ate? }` |

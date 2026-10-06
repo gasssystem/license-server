@@ -122,10 +122,12 @@ function avaliarLicenca(lic, opts = {}) {
   const antecedencia = opts.avisoAntecedenciaDias ?? 15;
   const inicio = dia(lic.inicio);
   const plano = lic.plano ?? 'anual';
+  const produto = lic.produto ?? 'gassflow_bpm';
+  const produtoLabel = PRODUTO_LABEL[produto] ?? produto;
 
   const base = {
     cliente: lic.cliente_nome ?? null,
-    produto: lic.produto ?? 'gassflow_bpm',
+    produto,
     plano,
     expira_em: lic.fim ? dia(lic.fim).toISOString().slice(0, 10) : null
   };
@@ -152,7 +154,7 @@ function avaliarLicenca(lic, opts = {}) {
     const diasRestantes = diffDias(hoje, fim);
     const aviso =
       diasRestantes <= antecedencia
-        ? `Sua licença do GassFlow! BPM expira em ${diasRestantes} dia(s) (${fmt(fim)}). Renove com a Gass System.`
+        ? `Sua licença do ${produtoLabel} expira em ${diasRestantes} dia(s) (${fmt(fim)}). Renove com a Gass System.`
         : null;
     return { ...base, valida: true, status: 'ativa', bloquear: false, dias_restantes: diasRestantes, aviso };
   }
@@ -175,7 +177,7 @@ function avaliarLicenca(lic, opts = {}) {
     status: 'expirada',
     bloquear: true,
     dias_restantes: 0,
-    aviso: `Sua licença do GassFlow! BPM expirou em ${fmt(fim)}. Renove com a Gass System para voltar a usar.`
+    aviso: `Sua licença do ${produtoLabel} expirou em ${fmt(fim)}. Renove com a Gass System para voltar a usar.`
   };
 }
 

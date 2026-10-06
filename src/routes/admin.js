@@ -1,7 +1,7 @@
 const { Router } = require('express');
 
 const { config } = require('../config.js');
-const { q } = require('../db.js');
+const { pool, q } = require('../db.js');
 const { exigirLogin } = require('../auth.js');
 const {
   avaliarLicenca,
@@ -15,6 +15,7 @@ const {
   renovarFim,
   soDigitos
 } = require('../lib/licenca.js');
+const { MODULOS, PRODUTO_COM_MODULOS, validarFuncionalidades } = require('../lib/modulos.js');
 
 const adminRouter = Router();
 adminRouter.use(exigirLogin);
@@ -43,6 +44,11 @@ function validarPayload(body, { parcial = false } = {}) {
   if (exige('produto')) {
     if (!PRODUTOS.includes(body.produto)) erros.push(`produto deve ser ${PRODUTOS.join(' / ')}`);
     else out.produto = body.produto;
+  }
+  // light: só faz diferença no GassFlow! (esconde do menu o não contratado).
+  if (body.light !== undefined) {
+    if (typeof body.light !== 'boolean') erros.push('light deve ser true/false');
+    else out.light = body.light ? 1 : 0;
   }
   if (exige('inicio')) {
     if (!DATA_RE.test(String(body.inicio))) erros.push('inicio deve ser YYYY-MM-DD');
@@ -73,6 +79,41 @@ function validarPayload(body, { parcial = false } = {}) {
   return { erros, out };
 }
 
+/** Lê `funcionalidades` do body (se veio); só o GassFlow! é vendido por funcionalidade. */
+function lerFuncionalidades(body, produto, erros) {
+  if (produto !== undefined && produto !== PRODUTO_COM_MODULOS) return [];
+  if (body.funcionalidades === undefined) return undefined;
+  const { erro, codigos } = validarFuncionalidades(body.funcionalidades);
+  if (erro) erros.push(erro);
+  return codigos;
+}
+
+/** Substitui as funcionalidades contratadas da licença (atômico). */
+async function salvarFuncionalidades(licencaId, codigos) {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    await conn.execute(`DELETE FROM licenca_funcionalidades WHERE licenca_id = :id`, { id: licencaId });
+    for (const codigo of codigos) {
+      await conn.execute(
+        `INSERT INTO licenca_funcionalidades (licenca_id, codigo) VALUES (:id, :codigo)`,
+        { id: licencaId, codigo }
+      );
+    }
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+}
+
+/* GET /api/v1/admin/modulos — catálogo de módulos/funcionalidades (monta a tela). */
+adminRouter.get('/modulos', (_req, res) => {
+  res.json({ produto: PRODUTO_COM_MODULOS, modulos: MODULOS });
+});
+
 async function carregar(id) {
   const [lic] = await q(`SELECT * FROM licencas WHERE id = :id`, { id });
   if (!lic) return null;
@@ -90,8 +131,13 @@ async function carregar(id) {
      WHERE licenca_id = :id ORDER BY razao_social IS NULL, razao_social, cnpj`,
     { id }
   );
+  const funcs = await q(
+    `SELECT codigo FROM licenca_funcionalidades WHERE licenca_id = :id ORDER BY codigo`,
+    { id }
+  );
   return {
     ...lic,
+    funcionalidades: funcs.map((f) => f.codigo),
     veredito: avaliarLicenca(lic, { avisoAntecedenciaDias: config.avisoAntecedenciaDias }),
     ativacoes: total,
     ultima_ativacao: ultima ?? null,
@@ -122,13 +168,16 @@ adminRouter.get('/licencas', async (req, res, next) => {
       params.q = `%${String(req.query.q).trim()}%`;
     }
     const sql = `SELECT licencas.*,
-                        (SELECT COUNT(*) FROM licenca_cnpjs g WHERE g.licenca_id = licencas.id) AS grupo_total
+                        (SELECT COUNT(*) FROM licenca_cnpjs g WHERE g.licenca_id = licencas.id) AS grupo_total,
+                        (SELECT GROUP_CONCAT(f.codigo ORDER BY f.codigo) FROM licenca_funcionalidades f
+                         WHERE f.licenca_id = licencas.id) AS funcionalidades
                  FROM licencas ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
                  ORDER BY criado_em DESC LIMIT 500`;
     const rows = await q(sql, params);
     res.json(
       rows.map((lic) => ({
         ...lic,
+        funcionalidades: lic.funcionalidades ? lic.funcionalidades.split(',') : [],
         veredito: avaliarLicenca(lic, { avisoAntecedenciaDias: config.avisoAntecedenciaDias })
       }))
     );
@@ -172,6 +221,7 @@ adminRouter.post('/licencas', async (req, res, next) => {
       out.fim = out.plano === 'full' ? null : calcularFim(out.inicio, out.plano);
     }
     if (out.plano !== 'full' && !out.fim) erros.push('fim obrigatório para plano anual/mensal');
+    const funcionalidades = lerFuncionalidades(req.body ?? {}, out.produto ?? 'gassflow_bpm', erros);
     if (erros.length) return res.status(422).json({ erro: 'validacao', detalhes: erros });
 
     let chave = normalizarChave(req.body?.chave) ?? gerarChave();
@@ -186,16 +236,18 @@ adminRouter.post('/licencas', async (req, res, next) => {
       chave,
       produto: out.produto ?? 'gassflow_bpm',
       plano: out.plano ?? 'anual',
+      light: out.light ?? 0,
       status: out.status ?? 'ativa',
       tolerancia_dias: out.tolerancia_dias ?? 7,
       observacao: out.observacao ?? null,
       ...out
     };
     const result = await q(
-      `INSERT INTO licencas (chave, cliente_nome, cliente_cnpj, plano, status, inicio, fim, tolerancia_dias, observacao)
-       VALUES (:chave, :cliente_nome, :cliente_cnpj, :plano, :status, :inicio, :fim, :tolerancia_dias, :observacao)`,
+      `INSERT INTO licencas (chave, produto, cliente_nome, cliente_cnpj, plano, light, status, inicio, fim, tolerancia_dias, observacao)
+       VALUES (:chave, :produto, :cliente_nome, :cliente_cnpj, :plano, :light, :status, :inicio, :fim, :tolerancia_dias, :observacao)`,
       dados
     );
+    if (funcionalidades?.length) await salvarFuncionalidades(result.insertId, funcionalidades);
     res.status(201).json(await carregar(result.insertId));
   } catch (err) {
     next(err);
@@ -221,13 +273,17 @@ adminRouter.patch('/licencas/:id', async (req, res, next) => {
     const fimEf = 'fim' in out ? out.fim : atual.fim;
     if (planoEf !== 'full' && !fimEf) erros.push('fim obrigatório para plano anual/mensal');
     if (fimEf && fimEf < inicioEf) erros.push('fim não pode ser antes de inicio');
+    const funcionalidades = lerFuncionalidades(req.body ?? {}, out.produto ?? atual.produto, erros);
     if (erros.length) return res.status(422).json({ erro: 'validacao', detalhes: erros });
 
     const campos = Object.keys(out);
-    if (campos.length === 0) return res.json(atual);
+    if (campos.length === 0 && funcionalidades === undefined) return res.json(atual);
 
-    const setSql = campos.map((c) => `${c} = :${c}`).join(', ');
-    await q(`UPDATE licencas SET ${setSql} WHERE id = :id`, { ...out, id: req.params.id });
+    if (campos.length) {
+      const setSql = campos.map((c) => `${c} = :${c}`).join(', ');
+      await q(`UPDATE licencas SET ${setSql} WHERE id = :id`, { ...out, id: req.params.id });
+    }
+    if (funcionalidades !== undefined) await salvarFuncionalidades(atual.id, funcionalidades);
     res.json(await carregar(req.params.id));
   } catch (err) {
     next(err);
