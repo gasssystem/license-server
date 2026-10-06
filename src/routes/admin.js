@@ -459,7 +459,8 @@ adminRouter.get('/leads', async (req, res, next) => {
       params.q = `%${String(req.query.q).trim()}%`;
     }
     const rows = await q(
-      `SELECT * FROM leads ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+      `SELECT leads.*, DATEDIFF(cortesia_fim, CURDATE()) AS cortesia_restante
+       FROM leads ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
        ORDER BY ultima_consulta DESC LIMIT 500`,
       params
     );
@@ -485,7 +486,10 @@ adminRouter.get('/leads/resumo', async (_req, res, next) => {
          CAST(COALESCE(SUM(primeira_consulta >= NOW() - INTERVAL 7 DAY), 0)  AS UNSIGNED) AS novos_7d,
          CAST(COALESCE(SUM(primeira_consulta >= NOW() - INTERVAL 30 DAY), 0) AS UNSIGNED) AS novos_30d,
          CAST(COALESCE(SUM(ultima_consulta   >= NOW() - INTERVAL 7 DAY), 0)  AS UNSIGNED) AS ativos_7d,
-         CAST(COALESCE(SUM(total_consultas), 0) AS UNSIGNED)             AS consultas_total
+         CAST(COALESCE(SUM(total_consultas), 0) AS UNSIGNED)             AS consultas_total,
+         CAST(COALESCE(SUM(cortesia_fim >= CURDATE()), 0) AS UNSIGNED)  AS em_cortesia,
+         CAST(COALESCE(SUM(cortesia_fim >= CURDATE() AND cortesia_fim <= CURDATE() + INTERVAL 3 DAY), 0) AS UNSIGNED) AS cortesia_vencendo,
+         CAST(COALESCE(SUM(cortesia_fim < CURDATE()), 0) AS UNSIGNED)   AS cortesia_encerrada
        FROM leads`,
       {}
     );

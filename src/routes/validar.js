@@ -5,16 +5,38 @@ const { q } = require('../db.js');
 const { avaliarLicenca, cnpjValido, formatarCnpj, normalizarChave, soDigitos } = require('../lib/licenca.js');
 const { agruparPorModulo } = require('../lib/modulos.js');
 
+/** 'AAAA-MM-DD' válida, ou null. */
+function dataIso(valor) {
+  const s = String(valor ?? '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  const d = new Date(s + 'T00:00:00Z');
+  return Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== s ? null : s;
+}
+
+/**
+ * Período de cortesia sem chave mandado pela instalação (body.cortesia =
+ * { desde, fim }), ou null. Só vale junto com chave vazia.
+ */
+function cortesiaInformada(body) {
+  const desde = dataIso(body?.cortesia?.desde);
+  const fim = dataIso(body?.cortesia?.fim);
+  return desde && fim && fim >= desde ? { desde, fim } : null;
+}
+
 /**
  * Registra/atualiza o CNPJ como possível cliente (lead). Best-effort:
  * qualquer falha aqui é logada e NUNCA afeta a resposta da validação.
+ * cortesia: período da cortesia sem chave ({ desde, fim }) — null limpa (a
+ * instalação passou a ter chave, ou não está em cortesia).
  */
-function registrarLead({ cnpj, chave, status, coberto, instancia, versao, ip }) {
+function registrarLead({ cnpj, chave, status, coberto, instancia, versao, ip, cortesia = null }) {
   if (!cnpjValido(cnpj)) return;
   q(
-    `INSERT INTO leads (cnpj, chave_informada, ultimo_status, ultimo_coberto, instancia, versao_app, ip)
-     VALUES (:cnpj, :chave, :status, :coberto, :instancia, :versao, :ip)
+    `INSERT INTO leads (cnpj, chave_informada, ultimo_status, ultimo_coberto, instancia, versao_app, ip, cortesia_desde, cortesia_fim)
+     VALUES (:cnpj, :chave, :status, :coberto, :instancia, :versao, :ip, :cortesia_desde, :cortesia_fim)
      ON DUPLICATE KEY UPDATE
+       cortesia_desde  = VALUES(cortesia_desde),
+       cortesia_fim    = VALUES(cortesia_fim),
        ultima_consulta = NOW(),
        total_consultas = total_consultas + 1,
        chave_informada = COALESCE(VALUES(chave_informada), chave_informada),
@@ -30,7 +52,9 @@ function registrarLead({ cnpj, chave, status, coberto, instancia, versao, ip }) 
       coberto: coberto == null ? null : coberto ? 1 : 0,
       instancia: instancia && instancia !== 'desconhecida' ? instancia : null,
       versao: versao ?? null,
-      ip: ip || null
+      ip: ip || null,
+      cortesia_desde: cortesia?.desde ?? null,
+      cortesia_fim: cortesia?.fim ?? null
     }
   ).catch((err) => console.error('[validar] falha ao registrar lead:', err.message));
 }
@@ -81,7 +105,18 @@ validarRouter.post('/validar', async (req, res, next) => {
   try {
     const chave = normalizarChave(req.body?.chave);
     if (!chave) {
-      registrarLead({ cnpj: cnpjInformado, chave: null, status: 'nao_encontrada', coberto: null, instancia, versao, ip });
+      // Sem chave: instalação em cortesia de implantação (o Protheus manda o período).
+      const cortesia = cortesiaInformada(req.body);
+      registrarLead({
+        cnpj: cnpjInformado,
+        chave: null,
+        status: cortesia ? 'sem_chave_cortesia' : 'nao_encontrada',
+        coberto: null,
+        instancia,
+        versao,
+        ip,
+        cortesia
+      });
       return res.json({
         valida: false,
         bloquear: true,

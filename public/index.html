@@ -676,6 +676,8 @@
         ${kpi('Novos · 7 dias', r.novos_7d)}
         ${kpi('Novos · 30 dias', r.novos_30d)}
         ${kpi('Ativos · 7 dias', r.ativos_7d)}
+        ${kpi('Em cortesia (sem chave)', r.em_cortesia)}
+        ${kpi('Cortesia vence em até 3 dias', r.cortesia_vencendo)}
         ${kpi('Viraram cliente', r.cliente)}
         ${kpi('Consultas totais', r.consultas_total)}
       </div>`;
@@ -738,11 +740,24 @@
       const linhas = await res.json();
       if (!linhas.length) return ($('#lista-lead').innerHTML = '<div class="empty">Nenhum registro.</div>');
       $('#lista-lead').innerHTML = `<table><thead><tr>
-          <th>CNPJ</th><th>Chave informada</th><th>Última validação</th><th>Consultas</th><th>Situação</th><th></th></tr></thead>
+          <th>CNPJ</th><th>Chave informada</th><th>Cortesia</th><th>Última validação</th><th>Consultas</th><th>Situação</th><th></th></tr></thead>
         <tbody>${linhas.map(linhaLead).join('')}</tbody></table>`;
       $$('[data-edit-lead]').forEach((b) => (b.onclick = () => abrirLead(JSON.parse(b.dataset.editLead))));
       $$('[data-del-lead]').forEach((b) => (b.onclick = () => removerLead(b.dataset.delLead)));
     }
+    /**
+     * Cortesia de implantação (instalação sem chave): quantos dias faltam, ou
+     * quando acabou. O período vem do Protheus (leads.cortesia_desde/fim).
+     */
+    function celulaCortesia(l) {
+      if (!l.cortesia_fim) return '<span class="muted">—</span>';
+      const n = Number(l.cortesia_restante);
+      const ate = fmtData(String(l.cortesia_fim).slice(0, 10));
+      if (n < 0) return `<span class="pill descartado">Encerrada</span><br><span class="muted">em ${ate} · bloqueado</span>`;
+      const txt = n === 0 ? 'Último dia' : `Faltam ${n} dia${n === 1 ? '' : 's'}`;
+      return `<span class="pill ${n <= 3 ? 'em_contato' : 'novo'}">${txt}</span><br><span class="muted">até ${ate}</span>`;
+    }
+
     function linhaLead(l) {
       const j = JSON.stringify(l).replace(/"/g, '&quot;');
       const cob = l.ultimo_coberto == null ? '' : l.ultimo_coberto ? ' · coberto' : ' · fora da licença';
@@ -750,6 +765,7 @@
         <td><b>${l.cnpj}</b>${l.razao_social ? `<br><span class="muted">${l.razao_social}</span>` : ''}</td>
         <td>${l.chave_informada ? `<code>${l.chave_informada}</code>` : '<span class="muted">—</span>'}
           <br><span class="muted">${l.ultimo_status || ''}${cob}</span></td>
+        <td>${celulaCortesia(l)}</td>
         <td class="muted">${fmtDataHora(l.ultima_consulta)}<br>1ª: ${fmtDataHora(l.primeira_consulta)}</td>
         <td>${l.total_consultas}</td>
         <td><span class="pill ${l.situacao}">${LEAD_SIT_LABEL[l.situacao] || l.situacao}</span>${
