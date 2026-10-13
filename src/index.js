@@ -23,6 +23,7 @@ app.use(
 
 // Tela de gerenciamento (protegida por login via JS na própria página).
 app.use('/admin', express.static(path.join(__dirname, '..', 'public')));
+app.get('/', (_req, res) => res.redirect('/admin/'));
 
 app.get('/health', async (_req, res) => {
   try {
