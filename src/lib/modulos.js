@@ -32,7 +32,7 @@ const MODULOS = [
     funcionalidades: [
       { codigo: 'adiantamento', nome: 'Solicitação de Adiantamento' },
       { codigo: 'prestacao_contas', nome: 'Prestação de Contas' },
-      { codigo: 'cartao_corporativo', nome: 'Controle de Cartão Corporativo' },
+      { codigo: 'cartao_corporativo', nome: 'Cartão Corporativo' },
       { codigo: 'integracao_serasa', nome: 'Integração Serasa' },
       { codigo: 'cockpit', nome: 'Cockpit Financeiro' }
     ]
